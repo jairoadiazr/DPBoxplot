@@ -13,7 +13,7 @@ from private_quantiles.unboundedQuantile import unboundedQuantile #unbounded
 #MAIN FUNCTIONS
 
 #sns wrapper for private boxplot
-def pboxplot(data=None, x=None, y=None, eps = 5, w=7/8, bounds = (-50,50), seed=-1, method = 'DPBoxplot', hue=None, order=None, hue_order=None, orient=None, color=None, palette=None, saturation=0.75, fill=True, dodge='auto', width=0.8, gap=0, whis=1.5, linecolor='auto', linewidth=None, fliersize=None, hue_norm=None, native_scale=False, log_scale=None, formatter=None, legend='auto', ax=None, **kwargs):
+def pboxplot(data=None, x=None, y=None, eps = 5, w=7/8, bounds = (-50,50), seed=-1, c = 1, delta = 0.25, method = 'DPBoxplot', hue=None, order=None, hue_order=None, orient=None, color=None, palette=None, saturation=0.75, fill=True, dodge='auto', width=0.8, gap=0, whis=1.5, linecolor='auto', linewidth=None, fliersize=None, hue_norm=None, native_scale=False, log_scale=None, formatter=None, legend='auto', ax=None, **kwargs):
     
     add_hue = False
     
@@ -33,7 +33,7 @@ def pboxplot(data=None, x=None, y=None, eps = 5, w=7/8, bounds = (-50,50), seed=
         for column in df.columns:
             cur_x = list(df[column])
             keps = 1
-            box_whiskers, outliers, whiskers_size, n = get_box_plot(cur_x, dp = True, eps = eps/keps, w = w, bounds = bounds, method = method)
+            box_whiskers, outliers, whiskers_size, n = get_box_plot(cur_x, dp = True, eps = eps/keps, w = w, bounds = bounds, method = method, c = c, delta = delta)
             df_pboxplots.append(box_whiskers)
             df_pboxplots_info.append(outliers + [whiskers_size, n])
         
@@ -49,7 +49,7 @@ def pboxplot(data=None, x=None, y=None, eps = 5, w=7/8, bounds = (-50,50), seed=
     else:
         if x is None:
             cur_x = list(data[y])
-            box_whiskers, outliers, whiskers_size, n = get_box_plot(cur_x, dp = True, eps = eps, w = w, bounds = bounds, method = method)
+            box_whiskers, outliers, whiskers_size, n = get_box_plot(cur_x, dp = True, eps = eps, w = w, bounds = bounds, method = method, c = c, delta = delta)
             df_pboxplots.append(box_whiskers)
             df_pboxplots_info.append(outliers + [whiskers_size, n])
             colnames = [y]
@@ -118,7 +118,7 @@ def pboxplot(data=None, x=None, y=None, eps = 5, w=7/8, bounds = (-50,50), seed=
 
                     #keps = sumlog/np.log(len(cur_x))
                     keps = 1
-                    box_whiskers, outliers, whiskers_size, n = get_box_plot(cur_x, dp = True, eps = eps/keps, w = w, bounds = bounds, method = method)
+                    box_whiskers, outliers, whiskers_size, n = get_box_plot(cur_x, dp = True, eps = eps/keps, w = w, bounds = bounds, method = method, c = c, delta = delta)
                     
                     df_box_whiskers = df_box_whiskers + box_whiskers
                     hue_column = hue_column + [cur_cat_hue for i in box_whiskers]
@@ -229,7 +229,7 @@ def pboxplot(data=None, x=None, y=None, eps = 5, w=7/8, bounds = (-50,50), seed=
             ax.set_ylabel(y)
 
 #get differentially private boxplot
-def get_box_plot(x, dp = True, eps = 10, w=7/8, bounds = (-50,50), method = 'DPBoxplot', box_method = 'JointExp', b=1.001, swap = False, c = 20, delta = 0.25):
+def get_box_plot(x, dp = True, eps = 10, w=7/8, bounds = (-50,50), method = 'DPBoxplot', box_method = 'JointExp', b=1.001, swap = False, c = 1, delta = 0.25):
 
     # INPUT
     # x --> data (vector)
@@ -254,8 +254,10 @@ def get_box_plot(x, dp = True, eps = 10, w=7/8, bounds = (-50,50), method = 'DPB
 
     n = len(x)
     
-    extreme_quantile = 1/np.sqrt(n)/c
-    #extreme_quantile = 1/n*c
+    #extreme_quantile = 1/np.sqrt(n)/c
+    extreme_quantile = 1/n
+    extreme_upper = 1
+    extreme_lower = extreme_quantile
     
     if dp==True:
         #calculate points for private boxplot
@@ -264,12 +266,12 @@ def get_box_plot(x, dp = True, eps = 10, w=7/8, bounds = (-50,50), method = 'DPB
             
             #calculate dp minimum
             try:
-                qmin = diffprivlib.tools.quantile(x, extreme_quantile, epsilon=eps_bp*1/5, bounds = bounds)
+                qmin = diffprivlib.tools.quantile(x, extreme_lower, epsilon=eps_bp*1/5, bounds = bounds)
             except:
                 qmin = -np.Inf
                 
             try:
-                qmax = diffprivlib.tools.quantile(x, 1-extreme_quantile, epsilon=eps_bp*1/5, bounds = bounds)
+                qmax = diffprivlib.tools.quantile(x, extreme_upper, epsilon=eps_bp*1/5, bounds = bounds)
             except:
                 qmax = np.Inf
                 
@@ -282,14 +284,14 @@ def get_box_plot(x, dp = True, eps = 10, w=7/8, bounds = (-50,50), method = 'DPB
             #calculate dp minimum
             try:
                 try:
-                    qmin = -unboundedQuantile(-x, -bounds[1], b=b, q = 1-extreme_quantile, eps = eps_bp*1/5)
+                    qmin = -unboundedQuantile(-x, -bounds[1], b=b, q = extreme_upper, eps = eps_bp*1/5)
                 except:
-                    qmin = unboundedQuantile(x, bounds[0], b=b, q = extreme_quantile, eps = eps_bp*1/5)
+                    qmin = unboundedQuantile(x, bounds[0], b=b, q = extreme_lower, eps = eps_bp*1/5)
             except:
                 qmin = -np.Inf
                 
             try:
-                qmax = unboundedQuantile(x, bounds[0], b=b, q = 1-extreme_quantile, eps = eps_bp*1/5)
+                qmax = unboundedQuantile(x, bounds[0], b=b, q = extreme_upper, eps = eps_bp*1/5)
             except:
                 qmax = np.Inf
             
@@ -302,22 +304,22 @@ def get_box_plot(x, dp = True, eps = 10, w=7/8, bounds = (-50,50), method = 'DPB
             ub = unboundedQuantile(x, bounds[0], b=b, q = 0.75, eps = eps_bp*1/5)
             
         elif method == 'JointExp':
-            qmin,lb,med,ub,qmax = joint_exp(np.sort(x),bounds[0],bounds[1], qs = np.array([extreme_quantile,0.25,0.5,0.75,1-extreme_quantile]), eps = eps_bp, swap=swap)
+            qmin,lb,med,ub,qmax = joint_exp(np.sort(x),bounds[0],bounds[1], qs = np.array([extreme_lower,0.25,0.5,0.75,extreme_upper]), eps = eps_bp, swap=swap)
             
         elif method == 'ApproxQuantile':
-            qmin,lb,med,ub,qmax = approximate_quantiles_algo(x, np.array([extreme_quantile,0.25,0.5,0.75,1-extreme_quantile]), bounds = [bounds[0],bounds[1]], epsilon = eps_bp, swap=swap)
+            qmin,lb,med,ub,qmax = approximate_quantiles_algo(x, np.array([extreme_lower,0.25,0.5,0.75,extreme_upper]), bounds = [bounds[0],bounds[1]], epsilon = eps_bp, swap=swap)
             
         if method == 'DPBoxplot':
             #calculate dp minimum
             try:
                 if len(x)<1000:
-                    print('warning')
+                    #print('warning')
                     raise Exception("Data size not appropriate for unbound estimation")
                 try:
-                    qmin = -unboundedQuantile(-x, -bounds[1], b=b, q = 1-extreme_quantile, eps = eps_bp*1/5)
+                    qmin = -unboundedQuantile(-x, -bounds[1], b=b, q = extreme_upper, eps = eps_bp*1/5)
                 except:
-                    qmin = unboundedQuantile(x, bounds[0], b=b, q = extreme_quantile, eps = eps_bp*1/5)
-                qmax = unboundedQuantile(x, bounds[0], b=b, q = 1-extreme_quantile, eps = eps_bp*1/5)
+                    qmin = unboundedQuantile(x, bounds[0], b=b, q = extreme_lower, eps = eps_bp*1/5)
+                qmax = unboundedQuantile(x, bounds[0], b=b, q = extreme_upper, eps = eps_bp*1/5)
                 
                 if qmax>qmin:
                     if box_method == 'JointExp':
@@ -329,9 +331,9 @@ def get_box_plot(x, dp = True, eps = 10, w=7/8, bounds = (-50,50), method = 'DPB
             except:
                 #print("Warning: Error calculating private lower and/or upper bounds")
                 if box_method == 'JointExp':
-                    qmin,lb,med,ub,qmax = joint_exp(np.sort(x),bounds[0],bounds[1], qs = np.array([extreme_quantile,0.25,0.5,0.75,1-extreme_quantile]), eps = eps_bp, swap=swap)
+                    qmin,lb,med,ub,qmax = joint_exp(np.sort(x),bounds[0],bounds[1], qs = np.array([extreme_lower,0.25,0.5,0.75,extreme_upper]), eps = eps_bp, swap=swap)
                 elif box_method == 'ApproxQuantile':
-                    qmin,lb,med,ub,qmax = approximate_quantiles_algo(x, np.array([extreme_quantile,0.25,0.5,0.75,1-extreme_quantile]), bounds = [bounds[0],bounds[1]], epsilon = eps_bp, swap=swap)
+                    qmin,lb,med,ub,qmax = approximate_quantiles_algo(x, np.array([extreme_lower,0.25,0.5,0.75,extreme_upper]), bounds = [bounds[0],bounds[1]], epsilon = eps_bp, swap=swap)
         
       
         qmax = np.min([qmax, bounds[1]])
@@ -371,7 +373,7 @@ def get_box_plot(x, dp = True, eps = 10, w=7/8, bounds = (-50,50), method = 'DPB
     return box_whiskers, outliers, whiskers_size, n
  
 #get whiskers and number of outliers
-def get_whiskers_outliers_points(x, qmin, lb, med, ub, qmax, n, eps = 1, w = None, bounds = (-50,50), delta = 0):
+def get_whiskers_outliers_points(x, qmin, lb, med, ub, qmax, n, eps = 1, w = None, bounds = (-50,50), delta = 0.25):
     
     #Calculate whiskers and outlier points based on outlier proportion for better visualization of outliers and skewness
     n = len(x)
@@ -379,8 +381,9 @@ def get_whiskers_outliers_points(x, qmin, lb, med, ub, qmax, n, eps = 1, w = Non
     lw = lb-1.5*(ub-lb)-0
     uw = ub+1.5*(ub-lb)+0
     
+    lambda_n = n**(-delta)
     
-    if (qmin > lw) and (abs((qmin-lw)/lw) > (n**(-1/2+delta))):
+    if (qmin > lw) and (abs((qmin-lw)/lw) > lambda_n):
         lw = np.min([qmin,lb])
         low_out = 0 #no low outliers when estimated minimum is higher than estimated lower whisker
     else:
@@ -390,7 +393,7 @@ def get_whiskers_outliers_points(x, qmin, lb, med, ub, qmax, n, eps = 1, w = Non
 
         
     #check if maximum differs 10% from upper whisker, if so, then modify whisker accordingly
-    if (qmax < uw) and (abs((qmax-uw)/uw) > (n**(-1/2+delta))):
+    if (qmax < uw) and (abs((qmax-uw)/uw) > lambda_n):
         uw = np.max([qmax,ub])
         up_out = 0 #no upper outliers when estimated maximum is lower than estimated upper whisker
     else:
