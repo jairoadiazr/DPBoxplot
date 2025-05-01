@@ -1,3 +1,8 @@
+# DPBoxplot
+**Differentially Private Boxplots**
+
+This repository contains the official implementation of **DPBoxplot**, te generate differentially private boxplots. 
+
 📄 **Original Paper**: K. Ramsay, J. Diaz-Rodriguez. *"Differentially Private Boxplots"* [Available on arXiv](https://arxiv.org/abs/2405.20415) - To appear in ICML 2025 
 
 *Despite the potential of differentially private data visualization to harmonize data analysis and privacy, research in this area remains underdeveloped. Boxplots are a widely popular visualization used for summarizing a dataset and for comparison of multiple datasets. Consequentially, we introduce a differentially private boxplot. We evaluate its effectiveness for displaying location, scale, skewness and tails of a given empirical distribution. In our theoretical exposition, we show that the location and scale of the boxplot are estimated with optimal sample complexity, and the skewness and tails are estimated consistently, which is not always the case for a boxplot naively constructed from a single existing differentially private quantile algorithm. As a byproduct of this exposition, we introduce several new results concerning private quantile estimation. In simulations, we show that this boxplot performs similarly to a non-private boxplot, and it outperforms the naive boxplot. Additionally, we conduct a real data analysis of Airbnb listings, which shows that comparable analysis can be achieved through differentially private boxplot visualization.*
