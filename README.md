@@ -1,7 +1,7 @@
 # DPBoxplot
 **Differentially Private Boxplots**
 
-This repository contains the official implementation of **DPBoxplot**, te generate differentially private boxplots. 
+This repository contains the official implementation of **DPBoxplot**, to generate differentially private boxplots. 
 
 📄 **Original Paper**: K. Ramsay, J. Diaz-Rodriguez. *"Differentially Private Boxplots"* [Available on arXiv](https://arxiv.org/abs/2405.20415) - To appear in ICML 2025 
 
