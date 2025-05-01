@@ -19,5 +19,5 @@ This repository contains the official implementation of **DPBoxplot**, to genera
   - `case_study.ipynb` – Generates boxplots in the case study from the paper.
 
 ## 📜 Citation
-If you use this code or any of the data provided in this repository in your research, please cite the official paper:  
+If you use this code or any of the results provided in this repository in your research, please cite the official paper:  
 [arXiv:2405.20415](https://arxiv.org/abs/2405.20415) -- Soon to appear in ICML 2025
